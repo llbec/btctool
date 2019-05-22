@@ -22,7 +22,7 @@ if(NOT CENTOS)
   list(APPEND IMPORTLIB miniupnpc)
 endif()
 
-#message("--      ${IMPORTLIB}")
+message(STATUS "${IMPORTLIB}")
 
 ###################################### Targets ######################################
 message("") # empty line
