@@ -1,0 +1,10 @@
+.vs/
+.vscode/
+.idea/
+cmake-build-debug/
+/build
+/build*/
+/patches/
+/data/
+.DS_Store
+build/
