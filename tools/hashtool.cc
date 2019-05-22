@@ -1,4 +1,5 @@
 #include "hash.h"
+#include "primitives/block.h"
 
 template<typename T>
 void write(CHashWriter &s, const T& obj){ s << obj; }
@@ -26,6 +27,17 @@ void ShowHash(int argc, char const * argv[])
 
     uint256 hs = ss.GetHash();
     printf("expect: f961a7a6399ea382a9c88f7f956d7446f04d4e4be4e0d6afdb117d0968654521\nresult: %s\n", hs.ToString().c_str());
+
+    CBlockHeader qtmblock;
+    qtmblock.nVersion = 1;
+    qtmblock.nTime = 1504695029;
+    qtmblock.nNonce = 8026361;
+    qtmblock.nBits = std::stoi("1f00ffff",nullptr,16);
+    qtmblock.hashPrevBlock = uint256S("000075aef83cf2853580f8ae8ce6f8c3096cfa21d98334d6e3f95e5582ed986c");
+    qtmblock.hashMerkleRoot = uint256S("ed34050eb5909ee535fcb07af292ea55f3d2f291187617b44d3282231405b96d");
+    qtmblock.hashStateRoot = uint256S("9514771014c9ae803d8cea2731b2063e83de44802b40dce2d06acd02d0ff65e9");
+    qtmblock.hashUTXORoot = uint256S("21b463e3b52f6201c0ad6c991be0485b6ef8c092e64583ffa655cc1b171fe856");
+    printf("expect: 000075aef83cf2853580f8ae8ce6f8c3096cfa21d98334d6e3f95e5582ed986c\nresult: %s\n", qtmblock.GetHash().ToString().c_str());
 
     return;
 }
