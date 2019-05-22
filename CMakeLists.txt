@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 
-project (BTCTOOL)
+project (TOOL)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 ###################################### Options ######################################
@@ -35,6 +35,40 @@ set(CMAKE_C_COMPILER "gcc")
 set(CMAKE_CXX_COMPILER_ARG1 "-std=c++0x")
 
 #
+#Environment checks
+#
+IF(APPLE)
+    add_definitions( "-DMAC_OSX" )
+ELSE()
+    #add_definitions("-rdynamic")
+ENDIF()
+
+add_definitions("-pthread")
+
+# add a macro that needed by chain's source code
+add_definitions(-DHAVE_CONFIG_H)
+
+#
+#Mysql checks
+#
+execute_process(COMMAND mysql_config --libs_r OUTPUT_VARIABLE MYSQL_LIB OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND mysql_config --include OUTPUT_VARIABLE MYSQL_INCLUDE OUTPUT_STRIP_TRAILING_WHITESPACE)
+message("-- MySQL include: ${MYSQL_INCLUDE}")
+message("-- MySQL library: ${MYSQL_LIB}")
+if(NOT MYSQL_LIB)
+  message(STATUS "MySQL library not found!")
+endif()
+
+if(NOT MYSQL_INCLUDE)
+  message(STATUS "MySQL header not found!")
+endif()
+
+if(MYSQL_LIB AND MYSQL_INCLUDE)
+  set(MYSQL "use")
+  add_definitions("-DMYSQL_ENABLE")
+endif()
+
+#
 # The number of concurrent jobs when compiling a third-party library
 # Example: -DJOBS=2
 # Default: 1
@@ -54,24 +88,16 @@ set(SUPPORTED_CHAIN_TYPES "BTC|QTM|UT")
 if(NOT CHAIN_TYPE)
   message(FATAL_ERROR "Chain type not defined! (-DCHAIN_TYPE=${SUPPORTED_CHAIN_TYPES})")
 endif()
-#set(CHAIN_TYPE "ULORD")
-#set(CHAIN_NAME "ulord Core")
-IF(APPLE)
-    add_definitions( "-DMAC_OSX" )
-ELSE()
-    #add_definitions("-rdynamic")
-ENDIF()
-add_definitions("-pthread")
 
 # Bitcoin
 if (CHAIN_TYPE STREQUAL "BTC")
   set(CHAIN_NAME "Bitcoin Core")
 
-# Litecoin
+# Qtum
 elseif(CHAIN_TYPE STREQUAL "QTM")
   set(CHAIN_NAME "Qtum core")
 
-# UT
+# ULord
 elseif(CHAIN_TYPE STREQUAL "UT")
   set(CHAIN_NAME "Ulord core")
 
@@ -81,22 +107,6 @@ else()
   message(FATAL_ERROR "Supported chain type: ${SUPPORTED_CHAIN_TYPES}")
 endif()
 
-message("-- Chain Type: ${CHAIN_NAME} (-DCHAIN_TYPE=${CHAIN_TYPE})")
-
-# add a macro that needed by chain's source code
-add_definitions(-DHAVE_CONFIG_H)
-
-#
-# Root Dir of Chain's Source Code: -DCHAIN_SRC_ROOT=<path>
-#
-if(NOT CHAIN_SRC_ROOT)
-  message(FATAL_ERROR "Root dir of chain's source code not defined! (-DCHAIN_SRC_ROOT=<path>)")
-endif()
-message("-- Root Dir of ${CHAIN_NAME}: ${CHAIN_SRC_ROOT} (-DCHAIN_SRC_ROOT=${CHAIN_SRC_ROOT})")
-if (NOT EXISTS "${CHAIN_SRC_ROOT}/src/version.h")
-  message(FATAL_ERROR "The source code of ${CHAIN_NAME} not exists!")
-endif()
-
 ###################################### Libs ######################################
 message("") # empty line
 message("------------------------------- Libs -------------------------------")
@@ -104,8 +114,12 @@ message("------------------------------- Libs -------------------------------")
 #
 # chain's libs
 #
+
+#
+#Ulord
+#
 if(CHAIN_TYPE STREQUAL "UT")
-  set(BITCOIN_LIBRARIES ${BITCOIN_LIBRARIES}
+  set(CHAINCORE_LIBRARIES ${CHAINCORE_LIBRARIES}
       "${CHAIN_SRC_ROOT}/src/libbitcoin_server.a"
       "${CHAIN_SRC_ROOT}/src/libbitcoin_wallet.a"
       "${CHAIN_SRC_ROOT}/src/libbitcoin_common.a"
@@ -115,44 +129,32 @@ if(CHAIN_TYPE STREQUAL "UT")
       "${CHAIN_SRC_ROOT}/src/crypto/libbitcoin_crypto.a"
     )
 
-elseif(CHAIN_TYPE STREQUAL "BTC")
-  set(BITCOIN_LIBRARIES ${BITCOIN_LIBRARIES}
-    "${CHAIN_SRC_ROOT}/src/libbitcoin_common.a"
-    "${CHAIN_SRC_ROOT}/src/libbitcoin_consensus.a"
-    "${CHAIN_SRC_ROOT}/src/libbitcoin_util.a"
-    "${CHAIN_SRC_ROOT}/src/crypto/libbitcoin_crypto_base.a"
-    "${CHAIN_SRC_ROOT}/src/crypto/libbitcoin_crypto_avx2.a"
-    "${CHAIN_SRC_ROOT}/src/crypto/libbitcoin_crypto_shani.a"
-    "${CHAIN_SRC_ROOT}/src/crypto/libbitcoin_crypto_sse41.a"
-    )
-
-elseif(CHAIN_TYPE STREQUAL "QTM")
-  set(BITCOIN_LIBRARIES ${BITCOIN_LIBRARIES}
-    "${CHAIN_SRC_ROOT}/src/libbitcoin_common.a"
-    "${CHAIN_SRC_ROOT}/src/libbitcoin_consensus.a"
-    "${CHAIN_SRC_ROOT}/src/libbitcoin_util.a"
-    "${CHAIN_SRC_ROOT}/src/crypto/libbitcoin_crypto_base.a"
-    "${CHAIN_SRC_ROOT}/src/crypto/libbitcoin_crypto_avx2.a"
-    "${CHAIN_SRC_ROOT}/src/crypto/libbitcoin_crypto_shani.a"
-    "${CHAIN_SRC_ROOT}/src/crypto/libbitcoin_crypto_sse41.a"
-    )
-
+#
+#Qtum & BTC
+#
 else()
-  message("Unknown chain type! (-DCHAIN_TYPE=${CHAIN_TYPE})")
-  message(FATAL_ERROR "Supported chain type: ${SUPPORTED_CHAIN_TYPES}")
+  set(CHAINCORE_LIBRARIES ${CHAINCORE_LIBRARIES}
+    "${CHAIN_SRC_ROOT}/src/libbitcoin_common.a"
+    "${CHAIN_SRC_ROOT}/src/libbitcoin_consensus.a"
+    "${CHAIN_SRC_ROOT}/src/libbitcoin_util.a"
+    "${CHAIN_SRC_ROOT}/src/crypto/libbitcoin_crypto_base.a"
+    "${CHAIN_SRC_ROOT}/src/crypto/libbitcoin_crypto_avx2.a"
+    "${CHAIN_SRC_ROOT}/src/crypto/libbitcoin_crypto_shani.a"
+    "${CHAIN_SRC_ROOT}/src/crypto/libbitcoin_crypto_sse41.a"
+    )
 endif()
 
-list(GET BITCOIN_LIBRARIES 0 BITCOIN_LIBRARIE)
-if (NOT EXISTS ${BITCOIN_LIBRARIE})
+list(GET CHAINCORE_LIBRARIES 0 CORE_LIBRARIE)
+if (NOT EXISTS ${CORE_LIBRARIE})
   message(STATUS "building ${CHAIN_NAME}...")
   execute_process(WORKING_DIRECTORY "${CHAIN_SRC_ROOT}" COMMAND ./autogen.sh)
   execute_process(WORKING_DIRECTORY "${CHAIN_SRC_ROOT}" COMMAND ./configure --disable-tests --disable-bench)
   execute_process(WORKING_DIRECTORY "${CHAIN_SRC_ROOT}" COMMAND make ${MAKE_JOBS})
 endif()
 
-foreach(BITCOIN_LIBRARIE ${BITCOIN_LIBRARIES})
-  if (NOT EXISTS ${BITCOIN_LIBRARIE})
-    message(FATAL_ERROR "${BITCOIN_LIBRARIE} not exists!")
+foreach(CORE_LIBRARIE ${CHAINCORE_LIBRARIES})
+  if (NOT EXISTS ${CORE_LIBRARIE})
+    message(FATAL_ERROR "${CORE_LIBRARIE} not exists!")
   endif()
 endforeach()
 
@@ -197,6 +199,9 @@ foreach(LEVELDB_LIBRARIE ${leveldb_LIBRARIES})
   endif()
 endforeach()
 
+#
+#Third libs
+#
 find_package(OpenSSL)
 if(NOT OPENSSL_FOUND)
   message(FATAL_ERROR "OpenSSL not found!")
@@ -232,30 +237,15 @@ if(NOT BDB_FOUND)
   message(FATAL_ERROR "Berkeley DB not found!")
 endif()
 
-#MYSQL
-
-execute_process(COMMAND mysql_config --libs_r OUTPUT_VARIABLE MYSQL_LIB OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process(COMMAND mysql_config --include OUTPUT_VARIABLE MYSQL_INCLUDE OUTPUT_STRIP_TRAILING_WHITESPACE)
-message("-- MySQL include: ${MYSQL_INCLUDE}")
-message("-- MySQL library: ${MYSQL_LIB}")
-if(NOT MYSQL_LIB)
-  message(STATUS "MySQL library not found!")
-endif()
-if(NOT MYSQL_INCLUDE)
-  message(STATUS "MySQL header not found!")
-endif()
-
-if(MYSQL_LIB AND MYSQL_INCLUDE)
-  set(MYSQL "use")
-  add_definitions("-DMYSQL_ENABLE")
-endif()
-
 message("") # add an empty line
 
 ###################################### Targets ######################################
 message("") # empty line
 message("------------------------------- Targets -------------------------------")
 
+#
+#Include path
+#
 include_directories(common
                     ${CHAIN_SRC_ROOT}/src
                     ${CHAIN_SRC_ROOT}/src/config
@@ -273,14 +263,11 @@ include_directories(common
                     ${GLOG_INCLUDE_DIRS}
                     )
 
-if(MYSQL)
-  include_directories(${MYSQL_INCLUDE})
-endif()
-
 if(CHAIN_TYPE STREQUAL "QTM")
   include_directories(${CHAIN_SRC_ROOT}/src/cpp-ethereum)
 endif()
-set(THIRD_LIBRARIES ${BITCOIN_LIBRARIES}
+
+set(THIRD_LIBRARIES ${CHAINCORE_LIBRARIES}
                     ${OPENSSL_CRYPTO_LIBRARY}
                     ${OPENSSL_SSL_LIBRARY}
                     ${univalue_LIBRARIES}
@@ -294,15 +281,26 @@ set(THIRD_LIBRARIES ${BITCOIN_LIBRARIES}
                     ${PTHREAD_LIBRARIES}
                     ${GLOG_LIBRARIES}
                     )
+
 if(MYSQL)
+  include_directories(${MYSQL_INCLUDE})
   list(APPEND THIRD_LIBRARIES ${MYSQL_LIB})
 endif()
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
-message("") # empty line
-#file(GLOB LIB_SOURCES common/*.cc)
-#file(GLOB LIB_HEAD common/*.h)
-#add_library(btctool STATIC ${LIB_SOURCES})
+# Bitcoin
+if (CHAIN_TYPE STREQUAL "BTC")
+  add_subdirectory(btc)
 
-add_subdirectory(tools)
+# Qtum
+elseif(CHAIN_TYPE STREQUAL "QTM")
+  add_subdirectory(qtum)
+
+# ULord
+elseif(CHAIN_TYPE STREQUAL "UT")
+  add_subdirectory(ulord)
+endif()
+
+message("------------------------------- tool end ------------------------------")
+message("") # empty line
