@@ -272,8 +272,13 @@ include_directories(common
                     ${BDB_INCLUDE_DIR}
                     ${GLOG_INCLUDE_DIRS}
                     )
+
 if(MYSQL)
   include_directories(${MYSQL_INCLUDE})
+endif()
+
+if(CHAIN_TYPE STREQUAL "QTM")
+  include_directories(${CHAIN_SRC_ROOT}/src/cpp-ethereum)
 endif()
 set(THIRD_LIBRARIES ${BITCOIN_LIBRARIES}
                     ${OPENSSL_CRYPTO_LIBRARY}
@@ -300,4 +305,4 @@ message("") # empty line
 #file(GLOB LIB_HEAD common/*.h)
 #add_library(btctool STATIC ${LIB_SOURCES})
 
-#add_subdirectory(tools)
+add_subdirectory(tools)

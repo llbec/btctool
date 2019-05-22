@@ -1,7 +1,7 @@
 #include "hash.h"
 
 template<typename T>
-void Push(CHashWriter &s, const T& obj){ s << obj; }
+void write(CHashWriter &s, const T& obj){ s << obj; }
 
 void ShowHash(int argc, char const * argv[])
 {
@@ -15,16 +15,17 @@ void ShowHash(int argc, char const * argv[])
     uint256 utxiroot = uint256S("fe8923626249d66ad50ff0d7b07c526d1e3a89abe9ac89ad78299dc651e64d58");
 
     CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
-    Push(ss, nVersion);
-    Push(ss, prevhash);
-    Push(ss, merkleroot);
-    Push(ss, nTime);
-    Push(ss, nBits);
-    Push(ss, nonse);
-    Push(ss, stateroot);
-    Push(ss, utxiroot);
+    write(ss, nVersion);
+    write(ss, prevhash);
+    write(ss, merkleroot);
+    write(ss, nTime);
+    write(ss, nBits);
+    write(ss, nonse);
+    write(ss, stateroot);
+    write(ss, utxiroot);
 
     uint256 hs = ss.GetHash();
-    printf("expect: f961a7a6399ea382a9c88f7f956d7446f04d4e4be4e0d6afdb117d0968654521\nresult: %s", hs.ToString().c_str());
+    printf("expect: f961a7a6399ea382a9c88f7f956d7446f04d4e4be4e0d6afdb117d0968654521\nresult: %s\n", hs.ToString().c_str());
+
     return;
 }
